@@ -1,0 +1,78 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+    <body>
+      <h1>Última posição</h1>
+      <div id="map" style="width:100%;height:100%"></div>
+    </body>
+
+    <script src="https://code.jquery.com/jquery-1.12.1.min.js"></script>
+
+    <script type="text/javascript">
+      var map;
+      var keys = ['sid', 'edgard', 'adriano'];
+
+      function gotoHistory( key ) {
+        window.location = '/history/' + key;
+      }
+
+      function initData() {
+        $.each(keys, function(i, key) {
+          $.get('/api/v1/locals/latest/' + key, function(data){
+            var geo = data[0];
+            var marker = new google.maps.Marker({
+              map: map,
+              position: geo,
+              label: geo.key
+            });
+
+            marker.addListener('click', function() { gotoHistory( this.label ) } );
+
+            markers[geo.key] = marker;
+          });
+        });
+      }
+
+      function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: {lat: -19.397, lng: -43.644},
+          zoom: 8
+        });
+
+        initData();
+      }
+
+    </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBtuF58uHNvSfJTWIDV9zImqxGv7yno55c&callback=initMap"
+    async defer></script>
+    <script src='/_ah/channel/jsapi'></script>
+
+    <script type="text/javascript">
+
+      function onMessage(evt) {
+        var geo = JSON.parse(evt.data);
+        var marker = markers[geo.key];
+
+        if(!marker) {
+          marker = new google.maps.Marker({
+            map: map,
+            position: geo,
+            label: geo.key
+          });
+
+          markers[geo.key] = marker;
+        } else {
+          marker.setPosition(geo);
+        }
+      }
+
+      var markers = [];
+
+      var token = '{{channel_id}}';
+      var channel = new goog.appengine.Channel(token);
+      var socket = channel.open();
+      socket.onmessage = onMessage;
+
+    </script>
+
+</html>
